@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: energetic_postgres
+    environment:
+      POSTGRES_DB: energetic_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - energetic_network
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: energetic_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - energetic_network
+
+  # FastAPI Backend
+  backend:
+    build: .
+    container_name: energetic_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/energetic_db
+      - REDIS_URL=redis://redis:6379
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DEBUG=true
+      - ALLOWED_HOSTS=["http://localhost:3000", "http://localhost:8000", "http://localhost:8080"]
+    volumes:
+      - .:/app
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - energetic_network
+    restart: unless-stopped
+
+  # Nginx reverse proxy (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: energetic_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+    networks:
+      - energetic_network
+    restart: unless-stopped
+
+  # VNC Server for computer use agent
+  vnc:
+    image: ghcr.io/anthropics/anthropic-quickstarts:computer-use-demo-latest
+    container_name: energetic_vnc
+    environment:
+      - ANTHROPIC_API_KEY=demo_key_for_testing
+      - WIDTH=1024
+      - HEIGHT=768
+    ports:
+      - "5901:5900"  # VNC (mapped to different host port)
+      - "6080:6080"  # noVNC web interface
+    volumes:
+      - vnc_data:/home/computeruse
+    networks:
+      - energetic_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  vnc_data:
+
+networks:
+  energetic_network:
+    driver: bridge

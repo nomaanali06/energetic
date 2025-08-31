@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energetic Backend - Computer Use Agent Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr 400px;
+            min-height: 600px;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            padding: 20px;
+            border-right: 1px solid #e9ecef;
+        }
+
+        .sidebar h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .new-session-btn {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            width: 100%;
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+
+        .new-session-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .session-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .session-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .session-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .session-item.active {
+            border-left-color: #27ae60;
+            background: #e8f5e8;
+        }
+
+        .session-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .session-status {
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+
+        .vnc-container {
+            background: #2c3e50;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .vnc-placeholder {
+            background: #34495e;
+            border: 2px dashed #7f8c8d;
+            border-radius: 10px;
+            width: 100%;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #bdc3c7;
+            font-size: 1.2em;
+            text-align: center;
+        }
+
+        .vnc-info {
+            margin-top: 20px;
+            text-align: center;
+            color: #ecf0f1;
+        }
+
+        .chat-container {
+            background: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .chat-header h3 {
+            color: #2c3e50;
+            font-size: 1.4em;
+        }
+
+        .chat-messages {
+            flex: 1;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            background: #3498db;
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.assistant {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .message.system {
+            background: #f39c12;
+            color: white;
+            font-style: italic;
+        }
+
+        .message.tool {
+            background: #9b59b6;
+            color: white;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .chat-input button {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: transform 0.2s;
+        }
+
+        .chat-input button:hover {
+            transform: translateY(-2px);
+        }
+
+        .status-bar {
+            background: #ecf0f1;
+            padding: 15px 20px;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e74c3c;
+        }
+
+        .status-indicator.connected {
+            background: #27ae60;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #e74c3c;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .success {
+            background: #27ae60;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Energetic Backend</h1>
+            <p>Computer Use Agent Session Management Demo</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Left Sidebar - Session Management -->
+            <div class="sidebar">
+                <h3>📋 Task History</h3>
+                <button class="new-session-btn" onclick="createNewSession()">
+                    ➕ Start New Agent Task
+                </button>
+                
+                <div class="session-list" id="sessionList">
+                    <!-- Sessions will be populated here -->
+                </div>
+            </div>
+
+            <!-- Middle - VNC Display -->
+            <div class="vnc-container">
+                <div class="vnc-placeholder" id="vncPlaceholder">
+                    <div>
+                        <div style="font-size: 3em; margin-bottom: 20px;">🖥️</div>
+                        <div>VNC Connection</div>
+                        <div style="font-size: 0.8em; margin-top: 10px;">Desktop View</div>
+                    </div>
+                </div>
+                
+                <div class="vnc-info">
+                    <div>VNC Server: localhost:5901</div>
+                    <div>Status: <span id="vncStatus">Disconnected</span></div>
+                </div>
+            </div>
+
+            <!-- Right - Chat Interface -->
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h3>💬 Chat Session</h3>
+                    <div id="currentSession">No active session</div>
+                </div>
+                
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message system">
+                        Welcome! Start a new session to begin chatting with the computer use agent.
+                    </div>
+                </div>
+                
+                <div class="chat-input">
+                    <input type="text" id="messageInput" placeholder="Type your message..." disabled>
+                    <button onclick="sendMessage()" id="sendButton" disabled>Send</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="connection-status">
+                <div class="status-indicator" id="wsStatus"></div>
+                <span id="wsStatusText">Disconnected</span>
+            </div>
+            
+            <div>
+                <span id="sessionCount">0</span> active sessions
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentSessionId = null;
+        let wsConnection = null;
+        let sessions = [];
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSessions();
+            updateStatusBar();
+        });
+
+        // Session Management
+        async function createNewSession() {
+            try {
+                const response = await fetch('/api/v1/sessions/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: `Task ${new Date().toLocaleTimeString()}`,
+                        system_prompt: null,
+                        model_name: null,
+                        tool_version: null
+                    })
+                });
+
+                if (response.ok) {
+                    const session = await response.json();
+                    sessions.unshift(session);
+                    updateSessionList();
+                    // Don't call selectSession here, let the user click on the session
+                    showSuccess('New session created successfully!');
+                } else {
+                    throw new Error('Failed to create session');
+                }
+            } catch (error) {
+                showError('Error creating session: ' + error.message);
+            }
+        }
+
+        async function loadSessions() {
+            try {
+                const response = await fetch('/api/v1/sessions/');
+                if (response.ok) {
+                    const data = await response.json();
+                    sessions = data.sessions;
+                    updateSessionList();
+                }
+            } catch (error) {
+                showError('Error loading sessions: ' + error.message);
+            }
+        }
+
+        function updateSessionList() {
+            const sessionList = document.getElementById('sessionList');
+            sessionList.innerHTML = '';
+
+            sessions.forEach(session => {
+                const sessionItem = document.createElement('div');
+                sessionItem.className = 'session-item';
+                sessionItem.onclick = () => selectSession(session.session_id);
+                
+                sessionItem.innerHTML = `
+                    <div class="session-title">${session.title}</div>
+                    <div class="session-status">${session.status} • ${new Date(session.created_at).toLocaleDateString()}</div>
+                `;
+                
+                sessionList.appendChild(sessionItem);
+            });
+
+            updateStatusBar();
+        }
+
+        function selectSession(sessionId) {
+            // Don't reconnect if it's the same session
+            if (currentSessionId === sessionId && wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+                return;
+            }
+            
+            // Update active session
+            currentSessionId = sessionId;
+            
+            // Update UI
+            document.querySelectorAll('.session-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Find and highlight selected session
+            const sessionItems = document.querySelectorAll('.session-item');
+            sessions.forEach((session, index) => {
+                if (session.session_id === sessionId) {
+                    sessionItems[index].classList.add('active');
+                }
+            });
+
+            // Update chat interface
+            document.getElementById('currentSession').textContent = `Session: ${sessionId}`;
+            document.getElementById('messageInput').disabled = false;
+            document.getElementById('sendButton').disabled = false;
+            
+            // Clear chat messages
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="message system">
+                    Session ${sessionId} selected. You can now chat with the computer use agent.
+                </div>
+            `;
+
+            // Connect to WebSocket
+            connectWebSocket(sessionId);
+        }
+
+        // WebSocket Communication
+        function connectWebSocket(sessionId) {
+            if (wsConnection) {
+                // Don't show disconnect message when switching sessions
+                wsConnection.onclose = null;
+                wsConnection.close();
+            }
+
+            const wsUrl = `ws://${window.location.host}/ws/chat/${sessionId}`;
+            wsConnection = new WebSocket(wsUrl);
+
+            wsConnection.onopen = function() {
+                updateWebSocketStatus(true);
+                showSuccess('Connected to computer use agent');
+            };
+
+            wsConnection.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+
+            wsConnection.onclose = function() {
+                updateWebSocketStatus(false);
+                showError('Disconnected from computer use agent');
+            };
+
+            wsConnection.onerror = function(error) {
+                updateWebSocketStatus(false);
+                showError('WebSocket error: ' + error.message);
+            };
+        }
+
+        function handleWebSocketMessage(data) {
+            const chatMessages = document.getElementById('chatMessages');
+            
+            switch (data.type) {
+                case 'connection':
+                    addMessage('system', data.data.message);
+                    break;
+                    
+                case 'ack':
+                    addMessage('user', data.data.user_message);
+                    break;
+                    
+                case 'content':
+                    addMessage('assistant', data.data.content, true);
+                    break;
+                    
+                case 'tool_call':
+                    addMessage('tool', `🔧 ${data.data.tool_name}: ${JSON.stringify(data.data.input)}`);
+                    break;
+                    
+                case 'tool_result':
+                    addMessage('tool', `✅ ${data.data.tool_name}: ${JSON.stringify(data.data.output)}`);
+                    break;
+                    
+                case 'complete':
+                    addMessage('system', 'Task completed successfully!');
+                    break;
+                    
+                case 'error':
+                    addMessage('system', `❌ Error: ${data.data.error}`);
+                    break;
+            }
+        }
+
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message || !wsConnection || wsConnection.readyState !== WebSocket.OPEN) {
+                return;
+            }
+
+            // Send message via WebSocket
+            wsConnection.send(JSON.stringify({
+                type: 'chat',
+                data: { message: message }
+            }));
+
+            // Clear input
+            messageInput.value = '';
+        }
+
+        function addMessage(role, content, streaming = false) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            if (streaming) {
+                messageDiv.id = 'streaming-message';
+                messageDiv.textContent = content;
+            } else {
+                messageDiv.textContent = content;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Utility Functions
+        function updateWebSocketStatus(connected) {
+            const statusIndicator = document.getElementById('wsStatus');
+            const statusText = document.getElementById('wsStatusText');
+            
+            if (connected) {
+                statusIndicator.classList.add('connected');
+                statusText.textContent = 'Connected';
+            } else {
+                statusIndicator.classList.remove('connected');
+                statusText.textContent = 'Disconnected';
+            }
+        }
+
+        function updateStatusBar() {
+            document.getElementById('sessionCount').textContent = sessions.length;
+        }
+
+        function showSuccess(message) {
+            const chatMessages = document.getElementById('chatMessages');
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.textContent = message;
+            chatMessages.appendChild(successDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showError(message) {
+            const chatMessages = document.getElementById('chatMessages');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            chatMessages.appendChild(errorDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Handle Enter key in message input
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Auto-refresh sessions every 60 seconds (reduced frequency)
+        setInterval(loadSessions, 60000);
+    </script>
+</body>
+</html>
