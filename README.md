@@ -1,6 +1,7 @@
+**Author: Noman Ali**
+
 # 🚀 Energetic Backend - Computer Use Agent Session Management
 
-**Author: AI Assistant**
 
 A scalable backend system for managing computer use agent sessions, built with FastAPI and integrated with Anthropic's computer use tools. This project replaces the experimental Streamlit interface with a robust, production-ready backend that provides real-time streaming, session management, and database persistence.
 
